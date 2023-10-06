@@ -13,5 +13,9 @@ public class MyItem {
     public String getText() {
         return text;
     }
+    public void setText(String msg) {
+         text = msg;
+    }
+
 }
 

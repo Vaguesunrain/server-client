@@ -25,6 +25,18 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
         return new ViewHolder(view);
     }
 
+    // 添加一个用于更新TextView文本的方法
+    public void updateTextViewText(int position, String newText) {
+        if (position >= 0 && position < itemList.size()) {
+            MyItem item = itemList.get(position);
+            item.setText(newText);
+
+            // 通知RecyclerView更新对应位置的数据
+            notifyItemChanged(position);
+        }
+    }
+
+
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         MyItem item = itemList.get(position);
@@ -59,6 +71,11 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
             super(itemView);
             textView = itemView.findViewById(R.id.textView);
             button = itemView.findViewById(R.id.button);
+        }
+
+        // 添加一个方法来更新TextView的文本
+        public void updateTextViewText(String text) {
+            textView.setText(text);
         }
     }
 }

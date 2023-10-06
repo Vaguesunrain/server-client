@@ -10,12 +10,16 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Client_Act extends AppCompatActivity {
     Client client;
@@ -28,6 +32,7 @@ public class Client_Act extends AppCompatActivity {
     private TextView textView_id;
     String getdata;//get data from server
     private SharedPreferences sharedPreferences;//用于读写固定数据
+    private SharedPreferences datawrite_map;//用于读写固定数据
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,11 +51,23 @@ public class Client_Act extends AppCompatActivity {
         adapter = new MyAdapter(this, itemList);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        sharedPreferences = getSharedPreferences("app_data",MODE_PRIVATE);
+        datawrite_map = getSharedPreferences("data_map",MODE_PRIVATE);
+        /*handle 处理*/
+        Handler handler = new Handler() {
+            @Override
+            public void handleMessage(android.os.Message msg) {  //这个是发送过来的消息
+                // 处理从子线程发送过来的消息
+                if (msg.what == 1000 ) {
+                }
+                else {
 
-        // 添加初始数据
-        addItem("项目 1");
-        addItem("项目 2");
-        addItem("项目 3");
+                   chatUI_update(msg.what,getdata.substring(3));
+                }
+            };
+        };
+
+
         Drawable targetBackground = getResources().getDrawable(R.drawable.custom_background);
         // 获取当前 Drawable 对象的 ConstantState
         Drawable.ConstantState targetBackgroundState = targetBackground.getConstantState();
@@ -170,7 +187,10 @@ public class Client_Act extends AppCompatActivity {
                     try {
                         Thread.sleep(500);
                         get_data_from_server();
-                        //System.out.println(getdata);
+                        if (getdata!=null) {
+                        Message msg = Message.obtain(handler, format_translation(getdata));
+                        msg.sendToTarget();}
+                        System.out.println(getdata);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -191,7 +211,6 @@ public class Client_Act extends AppCompatActivity {
             if (resultCode == Information.RESULT_OK) {
                 // 处理成功的结果，可以从 data 中获取传递的数据
                 String resultData = data.getStringExtra("resultKey");
-
                 // 执行你的函数
                 write_data(resultData,"information");
                 textView_id.setText(resultData);
@@ -200,10 +219,8 @@ public class Client_Act extends AppCompatActivity {
         }
     }
 
-
-
     private void connect_toser() {//连接服务器
-        SharedPreferences sharedPreferences = getSharedPreferences("app_data",MODE_PRIVATE);
+
         String valid = sharedPreferences.getString("valid","");
         if (valid.equals("1") && connected_state==false) {
             client.client_connect("123.249.88.236", 2019);
@@ -212,18 +229,17 @@ public class Client_Act extends AppCompatActivity {
             return;
         }
         else {
-            System.out.println("server online");
+            //System.out.println("server online");
             return ;
         }
     }
 
-    private void get_data_from_server() {
+    private void get_data_from_server() {//从服务器拿数据
         if(connected_state==false) {
             return;
         }
         getdata = client.client_read();
     }
-
     // 添加新项目到RecyclerView
     private void addItem(String text) {
         MyItem newItem = new MyItem(text);
@@ -232,12 +248,67 @@ public class Client_Act extends AppCompatActivity {
     }
 
     private String read_data(String text) {
-        sharedPreferences = getSharedPreferences("app_data",MODE_PRIVATE);
         return sharedPreferences.getString(text,"");
-
-
     }
     private void write_data(String data, String text){
         sharedPreferences.edit().putString(text, data).apply();
+    }
+    private String read_map(String text) {
+        return datawrite_map.getString(text,"");
+    }
+    private void write_map(String data){
+        String[] pairs = data.split("\\.");
+        Map<String, String> keyValuePairs = new HashMap<>();
+        for (String pair : pairs) {
+            // 按照逗号再次拆分键值对
+            String[] parts = pair.split(",");
+            if (parts.length == 2) {
+                String key = parts[0];
+                String value = parts[1];
+                keyValuePairs.put(key, value);
+            }
+        }
+        // 将解析后的键值对存储到SharedPreferences中
+        for (Map.Entry<String, String> entry : keyValuePairs.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            datawrite_map.edit().putString(key, value).apply();
+        }
+    }
+    private int format_translation(String msg){
+        //获取字符串前三字符
+        String str = msg.substring(0, 3);
+        String person = msg.substring(3);
+        //判断字符串前三字符
+        if(str.equals("ooo")){
+            //获取删掉前三字符串的部分
+            return (person.length()/3);
+        }
+        else if(str.equals("OOO")){
+            write_map(person);
+            return 1000;
+        }
+        else {return 1000;}
+    }
+
+    private void chatUI_update(int num,String user_index){
+        MyItem itemAtIndex1;
+        int get_ui_num=itemList.size();
+        if(num<itemList.size()){
+            for (int i=get_ui_num-1; i>num-1; i--){
+                itemList.remove(i);
+                adapter.notifyItemRemoved(i);
+            }
+        }
+        else if(num==get_ui_num){}
+        else {
+            for (int i=0; i<num-get_ui_num; i++){
+                addItem("test");
+            }
+        }
+        for (int i = 0; i<num ;i++){
+            adapter.updateTextViewText(i,user_index.substring(0,3));//updata ui text
+            user_index = user_index.substring(3);
+        }
     }
 }
