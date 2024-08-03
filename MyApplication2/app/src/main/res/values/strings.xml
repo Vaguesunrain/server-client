@@ -1,7 +1,0 @@
-<resources>
-    <string name="app_name">test</string>
-    <string name="fun1">远程</string>
-    <string name="fun2">局域网</string>
-    <string name="sure">保存头像和名字</string>
-    <string name="Ip">123.249.88.236</string>
-</resources>
